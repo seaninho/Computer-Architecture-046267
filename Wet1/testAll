@@ -1,0 +1,10 @@
+#!/bin/bash
+
+make -f makefile
+for ((i = 1; i<=4; i++)); do
+	./sim_main ./tests/example${i}.img 20 > ./our_results/example${i}_out.img  
+	./sim_main ./tests/example${i}.img 20 -s > ./our_results/example${i}_out.s.img
+	./sim_main ./tests/example${i}.img 20 -f > ./our_results/example${i}_out.f.img
+done
+
+
