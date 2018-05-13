@@ -14,7 +14,7 @@
 
 
 typedef enum {
-	SNT= 0,
+	SNT = 0,
 	WNT,
 	WT,
 	ST
