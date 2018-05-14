@@ -1,167 +1,390 @@
 /* 046267 Computer Architecture - Spring 2016 - HW #2 */
 /* This file should hold your implementation of the predictor simulator */
 
-#include "bp_api.h"
-#include <math.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <stdbool.h>
 #include <string.h>
-#include <stdio.h>
+#include <math.h>
+#include "bp_api.h"
 
-
-#define TARGET_SIZE 30
-#define HISTORY_MAX_SIZE 30 //TODO 256?
-#define BTB_MAX_SIZE 32
-
+#define TARGET_SIZE 30				// maximum size of a target address (aligned)
 
 typedef enum {
-	SNT = 0,
-	WNT,
-	WT,
-	ST
+	SNT = 0,						// strong not taken
+	WNT,							// weak not taken
+	WT,								// weak taken
+	ST								// strong taken
 } StateMachine;
 
 typedef struct {
-	uint32_t tag;
-	uint32_t target;
-	uint32_t* historyReg;
-	StateMachine* prediction[HISTORY_MAX_SIZE];
-} BTB;
+	unsigned tag;
+	unsigned target;
+	bool* localBHR;					// local branch history register pointer
+	StateMachine* localPredTable;	// local prediction table pointer
+} BTBEntry;
 
 typedef struct {
-	unsigned btbSize;
-	unsigned historySize;
-	unsigned tagSize;
-	bool isGlobalHist;
-	bool isGlobalTable;
-	int Shared;
-	SIM_stats Stats;
-	BTB btbTable[BTB_MAX_SIZE];
+	unsigned btbSize;				// size measured in entries
+	unsigned tagSize;				// size measured in bits
+	unsigned historySize;			// size measured in bits
+	unsigned predTableSize;			// size is 2^historySize
+	bool historyIsGlobal;			// true - history is global; local otherwise
+	bool* globalBHR;				// global branch history predictor pointer
+	bool tableIsGlobal;				// true - tables is global; local otherwise
+	StateMachine* globalPredTable;	// global prediction table pointer
+	int Shared;						// not_using_share = 0, using_share_lsb = 1, using_share_mid = 2
+	SIM_stats Stats;				// simulation stats
+	BTBEntry* btbTable;				// BTB table pointer
 } BP;
 
-BP BTBPredictor;
-//StateMachine globalStateMachine[HISTORY_MAX_SIZE];
+BP brPredictor; // Initializing the branch predictor
 
-/***************************static functions***************************/
-void cleanBTBTable() {
-	for (int i = 0 ; i < BTBPredictor.btbSize ; i++) {
-		BTBPredictor.btbTable[i].tag = -1;
-		BTBPredictor.btbTable[i].target = 0;
-		BTBPredictor.btbTable[i].historyReg = 0;
-		for (int j = 0; j<HISTORY_MAX_SIZE; j++) {
-			BTBPredictor.btbTable[i].prediction[j] = WT;
-		}
-	}
-}
+/*********************** static functions ***************************/
 
-int calcMaxNumber(unsigned size) {
-	int sum = 0;
-	for (int i = 0 ; i < size ; i++) {
-		sum += pow(2, i);
-	}
-	return sum;
-}
-
-
-/*************************** functions ***************************/
-int BP_init(unsigned btbSize, unsigned historySize, unsigned tagSize,
-             bool isGlobalHist, bool isGlobalTable, int Shared){
-			if (btbSize != 1 && btbSize!=2 && btbSize !=4 && btbSize !=8 && btbSize !=16 && btbSize !=32 )	{
-				fprintf(stderr, "Error in input: Illegal BTB table size\n");
-				return -1;
-			} else {
-				BTBPredictor.btbSize = btbSize;
-			}
-			if (historySize > 8 || historySize < 1)	{
-				fprintf(stderr, "Error in input: Illegal history size\n");
-				return -1;
-			}else{
-				BTBPredictor.historySize = historySize;
-			}
-			if (tagSize > 30 || tagSize < 0) {
-				fprintf(stderr, "Error in input: Illegaltag size\n");
-				return -1;
-			}else{
-				BTBPredictor.tagSize = tagSize;
-			}
-
-			BTBPredictor.isGlobalHist = isGlobalHist;
-			BTBPredictor.isGlobalTable = isGlobalTable;
-			BTBPredictor.Shared = Shared;
-
-			if (isGlobalHist) {
-				uint32_t* history = malloc();
-//				BTBPredictor
-			} else {
-
-			}
-			if (isGlobalTable) {
-
-			} else {
-
-			}
-
-			cleanBTBTable();
-
-			// reset the currect simulator state
-			BTBPredictor.Stats.flush_num = 0;
-			BTBPredictor.Stats.br_num = 0;
-			return 0;
-
-}
-
-bool BP_predict(uint32_t pc, uint32_t *dst){
-	int tagMaxNum = calcMaxNumber(BTBPredictor.tagSize);
-	unsigned tag_of_pc = (floor(pc/4))%tagMaxNum; // TODO update
-	int i = 0;// TODO calculate the relevant btb line
-	int predicted_target = -1;
-	if (tag_of_pc == BTBPredictor.btbTable[i].tag)	{
-		predicted_target = BTBPredictor.btbTable[i].target;
-	}
-	if (predicted_target == -1) {
-		&dst = pc+4;
+static bool isBTBTableSizeValid(unsigned btbSize) {
+	if (btbSize != 1 && btbSize != 2 && btbSize != 4 && btbSize != 8 && btbSize != 16 && btbSize != 32)
 		return false;
-	}
-	if (BTBPredictor.isGlobalTable)	{
-		if (BTBPredictor.isGlobalHist) {
+	else
+		return true;
+}
 
+static bool isHistorySizeValid(unsigned historySize) {
+	if (historySize < 1 || historySize > 8)
+		return false;
+	else
+		return true;
+}
+
+static bool isTagSizeValid(unsigned tagSize) {
+	if (tagSize < 0 || tagSize > 30)
+		return false;
+	else
+		return true;
+}
+
+static void cleanBTBTable() {
+	// cleaning each BTBEntry
+	for (int i = 0; i < brPredictor.btbSize; ++i) {
+
+		brPredictor.btbTable[i].tag = 0;
+		brPredictor.btbTable[i].target = 0;
+
+		// initializing local branch history register according to isGlobalHist
+		if (brPredictor.historyIsGlobal) {
+			brPredictor.btbTable[i].localBHR = NULL;
 		} else {
-
+			// initializing each local branch history register pointer to point at NULL
+			for (int j = 0; j < brPredictor.historySize; ++j) {
+				brPredictor.btbTable[i].localBHR[j] = 0;
+			}
 		}
-	} else {
 
+		// initializing local prediction table according to isGlobalTable
+		if (brPredictor.tableIsGlobal) {
+			brPredictor.btbTable[i].localPredTable = NULL;
+		} else {
+			// initializing each local prediction table pointer to point at NULL
+			for (int j = 0; j < brPredictor.predTableSize; ++j) {
+				brPredictor.btbTable[i].localPredTable[j] = WNT;
+			}
+		}
+	}
+}
+
+static unsigned createBitMask(unsigned size) {
+	unsigned mask = 0;
+	for (unsigned i = 0 ; i < size ; ++i) {
+		mask |= 1 << i;
+	}
+	return mask;
+}
+
+static unsigned calcTableIndex(bool* BHR, unsigned pc) {
+	unsigned index = 0, curr = 1;
+	for (int i = 0; i < brPredictor.historySize; ++i) {
+		if (BHR[i]) {
+			index += curr;
+		}
+		curr *= 2;
 	}
 
+	// if we use a local prediction table or Shared == 0
+	if (!brPredictor.tableIsGlobal || brPredictor.Shared == 0) {
+		return index;
+	}
+
+	// if we use a global prediction table & Shared != 0
+	unsigned shifted_pc = 0;
+	if (brPredictor.Shared == 1) {
+		shifted_pc = pc >> 2;
+	}
+	else {
+		shifted_pc = pc >> 16;
+	}
+
+	unsigned bit_mask = createBitMask(brPredictor.historySize);
+	unsigned shared_bits = shifted_pc & bit_mask;
+	return index ^ shared_bits;
+}
+
+/****************** bp_api.h functions implementation ******************/
+
+int BP_init(unsigned btbSize, unsigned historySize, unsigned tagSize,
+		bool isGlobalHist, bool isGlobalTable, int Shared) {
+
+	// checking BTB table size validity
+	if (isBTBTableSizeValid(btbSize)) {
+		brPredictor.btbSize = btbSize;
+	} else {
+		fprintf(stderr, "Error in input: Illegal BTBEntry table size\n");
+		return -1;
+	}
+
+	// checking history size validity
+	if (isHistorySizeValid(historySize)) {
+		brPredictor.historySize = historySize;
+	} else {
+		fprintf(stderr, "Error in input: Illegal history size\n");
+		return -1;
+	}
+
+	// checking tag size validity
+	if (isTagSizeValid(tagSize)) {
+		brPredictor.tagSize = tagSize;
+	} else {
+		fprintf(stderr, "Error in input: Illegal tag size\n");
+		return -1;
+	}
+
+	brPredictor.historyIsGlobal = isGlobalHist;
+	brPredictor.tableIsGlobal = isGlobalTable;
+	brPredictor.Shared = Shared;
+	// allocating space for the BTB according to the btbSize
+	brPredictor.btbTable = malloc(sizeof(BTBEntry) * brPredictor.btbSize);
+	// calculating the prediction table size
+	brPredictor.predTableSize = pow(2, historySize);
+
+	if (brPredictor.historyIsGlobal) {
+		// allocating space for the global branch history register and initializing it
+		brPredictor.globalBHR = malloc(sizeof(bool) * brPredictor.historySize);
+		for (int i = 0; i < brPredictor.historySize; ++i) {
+			brPredictor.globalBHR[i] = 0;
+		}
+		// initializing localBHR in cleanBTBTable
+	} else {
+		// initializing the global branch history register pointer to point at NULL
+		brPredictor.globalBHR = NULL;
+		// allocating space for a local branch history register in each btb entry
+		for (int i = 0; i < brPredictor.btbSize; ++i) {
+			brPredictor.btbTable[i].localBHR = malloc(sizeof(bool) * brPredictor.historySize);
+			// initializing localBHR in cleanBTBTable
+		}
+	}
+
+	if (brPredictor.tableIsGlobal) {
+		// allocating space for the global prediction table and initializing it
+		brPredictor.globalPredTable = malloc(sizeof(StateMachine) * brPredictor.predTableSize);
+		for (int i = 0; i < brPredictor.predTableSize; ++i) {
+			brPredictor.globalPredTable[i] = WNT;
+		}
+		// initializing local prediction table in cleanBTBTable
+	} else {
+		// initializing the global prediction table pointer to point at NULL
+		brPredictor.globalPredTable = NULL;
+		// allocating space for a local prediction table in each btb entry
+		for (int i = 0; i < brPredictor.btbSize; ++i) {
+			brPredictor.btbTable[i].localPredTable = malloc(sizeof(StateMachine) * brPredictor.predTableSize);
+			// initializing local prediction table in cleanBTBTable
+		}
+	}
+
+	cleanBTBTable();
+
+	// reset the current simulator state
+	brPredictor.Stats.flush_num = 0;
+	brPredictor.Stats.br_num = 0;
+	return 0;
+}
+
+bool BP_predict(uint32_t pc, uint32_t *dst) {
+	unsigned shifted_pc = pc >> 2;
+
+	unsigned bit_mask = createBitMask(brPredictor.btbSize); // creating the correct sized bit mask
+	unsigned btb_entry = shifted_pc & bit_mask;		// calculating the correct BTB entry
+
+	bit_mask = createBitMask(brPredictor.tagSize);  // creating the correct sized bit mask
+	unsigned tag = shifted_pc & bit_mask;	// calculating the correct tag
+
+	BTBEntry entry = brPredictor.btbTable[btb_entry];
+	if (tag == entry.tag) {
+		StateMachine state = WNT;
+		bool taken = false;
+		// using global history & global table
+		if (brPredictor.historyIsGlobal && brPredictor.tableIsGlobal) {
+			state = brPredictor.globalPredTable[calcTableIndex(brPredictor.globalBHR, pc)];
+			if (state == WT || state == ST) {
+				taken = true;
+			} else {
+				taken = false;
+			}
+		}
+		// using local history & global table
+		else if (!brPredictor.historyIsGlobal && brPredictor.tableIsGlobal) {
+			state = brPredictor.globalPredTable[calcTableIndex(entry.localBHR, pc)];
+			if (state == WT || state == ST) {
+				taken = true;
+			} else {
+				taken = false;
+			}
+		}
+		// using global history & local table
+		else if (brPredictor.historyIsGlobal && !brPredictor.tableIsGlobal) {
+			state = entry.localPredTable[calcTableIndex(brPredictor.globalBHR, pc)];
+			if (state == WT || state == ST) {
+				taken = true;
+			} else {
+				taken = false;
+			}
+		}
+		// using local history & local table
+		else if (!brPredictor.historyIsGlobal && !brPredictor.tableIsGlobal) {
+			state = entry.localPredTable[calcTableIndex(entry.localBHR, pc)];
+			if (state == WT || state == ST) {
+				taken = true;
+			} else {
+				taken = false;
+			}
+		}
+
+		if (taken) {
+			*dst = brPredictor.btbTable[btb_entry].target;
+			return true;
+		}
+	}
+
+	*dst = pc + 4;
 	return false;
 }
 
 void BP_update(uint32_t pc, uint32_t targetPc, bool taken, uint32_t pred_dst){
+	unsigned shifted_pc = pc >> 2;
 
-	BTBPredictor.Stats.br_num++; // Increase the brach's counter
+	unsigned bit_mask = createBitMask(brPredictor.btbSize); // creating the correct sized bit mask
+	unsigned btb_entry = shifted_pc & bit_mask;		// calculating the correct BTB entry
 
+	bit_mask = createBitMask(brPredictor.tagSize);  // creating the correct sized bit mask
+	unsigned tag = shifted_pc & bit_mask;	// calculating the correct tag
 
+	BTBEntry entry = brPredictor.btbTable[btb_entry];
+	if (tag != entry.tag) {
+		entry.tag = tag;
+		// using local branch history register - needs to be initialized
+		if (!brPredictor.historyIsGlobal && brPredictor.tableIsGlobal) {
+			for (int j = 0; j < brPredictor.historySize; ++j) {
+				entry.localBHR[j] = 0;
+			}
+		}
+		// using local prediction table - needs to be initialized
+		else if (brPredictor.historyIsGlobal && !brPredictor.tableIsGlobal) {
+			for (int j = 0; j < brPredictor.predTableSize; ++j) {
+				entry.localPredTable[j] = WNT;
+			}
+		}
+		// using local branch history register & local prediction table - both needs to be initialized
+		else if (!brPredictor.historyIsGlobal && !brPredictor.tableIsGlobal) {
+			for (int i = 0; i < brPredictor.historySize; ++i) {
+				entry.localBHR[i] = 0;
+			}
+			for (int j = 0; j < brPredictor.predTableSize; ++j) {
+				entry.localPredTable[j] = WNT;
+			}
+		}
+		// using global branch history register & global prediction table - no need to initialize
+	}
 
-	return;
+	StateMachine state = WNT;
+	// using global history & global table
+	if (brPredictor.historyIsGlobal && brPredictor.tableIsGlobal) {
+		// getting current state
+		state = brPredictor.globalPredTable[calcTableIndex(brPredictor.globalBHR, pc)];
+		// if branch is taken and the current state is NOT strong taken we need to change it
+		if (taken && state != ST) {
+			brPredictor.globalPredTable[calcTableIndex(brPredictor.globalBHR, pc)]++;
+		}
+		// if branch is taken and the current state is NOT strong taken we need to change it
+		else if (!taken && state != SNT) {
+			brPredictor.globalPredTable[calcTableIndex(brPredictor.globalBHR, pc)]--;
+		}
+	}
+	// using local history & global table
+	else if (!brPredictor.historyIsGlobal && brPredictor.tableIsGlobal) {
+		// getting current state
+		state = brPredictor.globalPredTable[calcTableIndex(entry.localBHR, pc)];
+		if (taken && state != ST) {
+			brPredictor.globalPredTable[calcTableIndex(entry.localBHR, pc)]++;
+		} else if (!taken && state != SNT) {
+			brPredictor.globalPredTable[calcTableIndex(entry.localBHR, pc)]--;
+		}
+	}
+	// using global history & local table
+	else if (brPredictor.historyIsGlobal && !brPredictor.tableIsGlobal) {
+		// getting current state
+		state = entry.localPredTable[calcTableIndex(brPredictor.globalBHR, pc)];
+		if (taken && state != ST) {
+			entry.localPredTable[calcTableIndex(brPredictor.globalBHR, pc)]++;
+		} else if (!taken && state != SNT) {
+			entry.localPredTable[calcTableIndex(brPredictor.globalBHR, pc)]--;
+		}
+	}
+	// using local history & local table
+	else if (!brPredictor.historyIsGlobal && !brPredictor.tableIsGlobal) {
+		// getting current state
+		state = entry.localPredTable[calcTableIndex(entry.localBHR, pc)];
+		if (taken && state != ST) {
+			entry.localPredTable[calcTableIndex(entry.localBHR, pc)]++;
+		} else if (!taken && state != SNT) {
+			entry.localPredTable[calcTableIndex(entry.localBHR, pc)]--;
+		}
+	}
+	// changing target according to targetPc
+	entry.target = targetPc;
+	// if targetPc is different from prediction destination and branch is taken, we need to flush the pipe
+	if (targetPc != pred_dst && taken) {
+		brPredictor.Stats.flush_num++;
+	}
+	brPredictor.Stats.br_num++;
 }
 
 void BP_GetStats(SIM_stats *curStats) {
-	curStats->flush_num = BTBPredictor.Stats.flush_num;
-	curStats->br_num = BTBPredictor.Stats.br_num;
 
-	int powerOfTwo = pow(2, BTBPredictor.historySize);
+	curStats->flush_num = brPredictor.Stats.flush_num;
+	curStats->br_num = brPredictor.Stats.br_num;
 
-	if (!BTBPredictor.isGlobalHist && !BTBPredictor.isGlobalTable)	{
-		BTBPredictor.Stats.size = BTBPredictor.btbSize*(BTBPredictor.tagSize+
-				TARGET_SIZE+BTBPredictor.historySize+2*powerOfTwo);
-	}else if(BTBPredictor.isGlobalHist && BTBPredictor.isGlobalTable) {
-		BTBPredictor.Stats.size = BTBPredictor.btbSize*(BTBPredictor.tagSize+
-				TARGET_SIZE)+BTBPredictor.historySize+2*powerOfTwo;
-	}else if(!BTBPredictor.isGlobalHist && BTBPredictor.isGlobalTable) {
-		BTBPredictor.Stats.size = BTBPredictor.btbSize*(BTBPredictor.tagSize+
-				TARGET_SIZE+BTBPredictor.historySize)+2*powerOfTwo;
-	}else if(BTBPredictor.isGlobalHist && !BTBPredictor.isGlobalTable) {
-		BTBPredictor.Stats.size = BTBPredictor.btbSize*(BTBPredictor.tagSize+
-				TARGET_SIZE+2*powerOfTwo)+BTBPredictor.historySize;
+	// history and table is local
+	if (!brPredictor.historyIsGlobal && !brPredictor.tableIsGlobal)	{
+
+		brPredictor.Stats.size =
+			brPredictor.btbSize * (brPredictor.tagSize + TARGET_SIZE + brPredictor.historySize + 2*brPredictor.predTableSize);
 	}
-	curStats->size = BTBPredictor.Stats.size;
+	// history and table is global
+	else if(brPredictor.historyIsGlobal && brPredictor.tableIsGlobal) {
+
+		brPredictor.Stats.size =
+			brPredictor.btbSize * (brPredictor.tagSize + TARGET_SIZE) + brPredictor.historySize + 2*brPredictor.predTableSize;
+	}
+	// history is local and table is global
+	else if(!brPredictor.historyIsGlobal && brPredictor.tableIsGlobal) {
+
+		brPredictor.Stats.size =
+			brPredictor.btbSize * (brPredictor.tagSize + TARGET_SIZE + brPredictor.historySize) + 2*brPredictor.predTableSize;
+	}
+	// history is global and table is local
+	else if(brPredictor.historyIsGlobal && !brPredictor.tableIsGlobal) {
+
+		brPredictor.Stats.size =
+			brPredictor.btbSize * (brPredictor.tagSize + TARGET_SIZE + 2*brPredictor.predTableSize) + brPredictor.historySize;
+	}
+	curStats->size = brPredictor.Stats.size;
 	return;
 }
