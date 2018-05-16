@@ -128,6 +128,28 @@ static unsigned calcTableIndex(bool* BHR, unsigned pc) {
 	return index ^ shared_bits;
 }
 
+static bool flushResolve(StateMachine state, bool taken, bool diff_tag, unsigned targetPc, unsigned pred_dst) {
+	if (diff_tag) {
+		if (taken)
+			return true;
+		else
+			return false;
+	}
+	else {
+		if (((state == WNT || state == SNT) && taken) || ((state == WT || state == ST) && !taken) || (taken && targetPc != pred_dst))
+			return true;
+		else
+			return false;
+	}
+}
+
+static void updateBHR(bool* BHR, bool taken){
+	for (int i = brPredictor.historySize; i > 0; --i) {
+		BHR[i] = BHR[i-1];
+	}
+	BHR[0] = taken;
+}
+
 /****************** bp_api.h functions implementation ******************/
 
 int BP_init(unsigned btbSize, unsigned historySize, unsigned tagSize,
@@ -200,7 +222,6 @@ int BP_init(unsigned btbSize, unsigned historySize, unsigned tagSize,
 	}
 
 	cleanBTBTable();
-
 	// reset the current simulator state
 	brPredictor.Stats.flush_num = 0;
 	brPredictor.Stats.br_num = 0;
@@ -210,59 +231,37 @@ int BP_init(unsigned btbSize, unsigned historySize, unsigned tagSize,
 bool BP_predict(uint32_t pc, uint32_t *dst) {
 	unsigned shifted_pc = pc >> 2;
 
-	unsigned bit_mask = createBitMask(brPredictor.btbSize); // creating the correct sized bit mask
+	unsigned bit_mask = createBitMask(log2(brPredictor.btbSize)); // creating the correct sized bit mask
 	unsigned btb_entry = shifted_pc & bit_mask;		// calculating the correct BTB entry
 
 	bit_mask = createBitMask(brPredictor.tagSize);  // creating the correct sized bit mask
 	unsigned tag = shifted_pc & bit_mask;	// calculating the correct tag
 
-	BTBEntry entry = brPredictor.btbTable[btb_entry];
-	if (tag == entry.tag) {
+	BTBEntry* entry = &brPredictor.btbTable[btb_entry];
+	if (tag == entry->tag) {
 		StateMachine state = WNT;
-		bool taken = false;
 		// using global history & global table
 		if (brPredictor.historyIsGlobal && brPredictor.tableIsGlobal) {
 			state = brPredictor.globalPredTable[calcTableIndex(brPredictor.globalBHR, pc)];
-			if (state == WT || state == ST) {
-				taken = true;
-			} else {
-				taken = false;
-			}
 		}
 		// using local history & global table
 		else if (!brPredictor.historyIsGlobal && brPredictor.tableIsGlobal) {
-			state = brPredictor.globalPredTable[calcTableIndex(entry.localBHR, pc)];
-			if (state == WT || state == ST) {
-				taken = true;
-			} else {
-				taken = false;
-			}
+			state = brPredictor.globalPredTable[calcTableIndex(entry->localBHR, pc)];
 		}
 		// using global history & local table
 		else if (brPredictor.historyIsGlobal && !brPredictor.tableIsGlobal) {
-			state = entry.localPredTable[calcTableIndex(brPredictor.globalBHR, pc)];
-			if (state == WT || state == ST) {
-				taken = true;
-			} else {
-				taken = false;
-			}
+			state = entry->localPredTable[calcTableIndex(brPredictor.globalBHR, pc)];
 		}
 		// using local history & local table
 		else if (!brPredictor.historyIsGlobal && !brPredictor.tableIsGlobal) {
-			state = entry.localPredTable[calcTableIndex(entry.localBHR, pc)];
-			if (state == WT || state == ST) {
-				taken = true;
-			} else {
-				taken = false;
-			}
+			state = entry->localPredTable[calcTableIndex(entry->localBHR, pc)];
 		}
 
-		if (taken) {
+		if (state == WT || state == ST) {
 			*dst = brPredictor.btbTable[btb_entry].target;
 			return true;
 		}
 	}
-
 	*dst = pc + 4;
 	return false;
 }
@@ -270,37 +269,32 @@ bool BP_predict(uint32_t pc, uint32_t *dst) {
 void BP_update(uint32_t pc, uint32_t targetPc, bool taken, uint32_t pred_dst){
 	unsigned shifted_pc = pc >> 2;
 
-	unsigned bit_mask = createBitMask(brPredictor.btbSize); // creating the correct sized bit mask
+	unsigned bit_mask = createBitMask(log2(brPredictor.btbSize)); // creating the correct sized bit mask
 	unsigned btb_entry = shifted_pc & bit_mask;		// calculating the correct BTB entry
 
 	bit_mask = createBitMask(brPredictor.tagSize);  // creating the correct sized bit mask
+//	printf("\n bit mask is: 0x%x\n", bit_mask);
 	unsigned tag = shifted_pc & bit_mask;	// calculating the correct tag
+//	printf("shifted pc is: 0x%x , tag is: %u , btb entry is: %u ~~ \n", shifted_pc, tag, btb_entry);
+	BTBEntry* entry = &brPredictor.btbTable[btb_entry];
 
-	BTBEntry entry = brPredictor.btbTable[btb_entry];
-	if (tag != entry.tag) {
-		entry.tag = tag;
+	bool diff_tag = false;
+
+	if (tag != entry->tag) {
+		entry->tag = tag;
+		diff_tag = true;
 		// using local branch history register - needs to be initialized
-		if (!brPredictor.historyIsGlobal && brPredictor.tableIsGlobal) {
+		if (!brPredictor.historyIsGlobal) {
 			for (int j = 0; j < brPredictor.historySize; ++j) {
-				entry.localBHR[j] = 0;
+				entry->localBHR[j] = 0;
 			}
 		}
 		// using local prediction table - needs to be initialized
-		else if (brPredictor.historyIsGlobal && !brPredictor.tableIsGlobal) {
+		if (!brPredictor.tableIsGlobal) {
 			for (int j = 0; j < brPredictor.predTableSize; ++j) {
-				entry.localPredTable[j] = WNT;
+				entry->localPredTable[j] = WNT;
 			}
 		}
-		// using local branch history register & local prediction table - both needs to be initialized
-		else if (!brPredictor.historyIsGlobal && !brPredictor.tableIsGlobal) {
-			for (int i = 0; i < brPredictor.historySize; ++i) {
-				entry.localBHR[i] = 0;
-			}
-			for (int j = 0; j < brPredictor.predTableSize; ++j) {
-				entry.localPredTable[j] = WNT;
-			}
-		}
-		// using global branch history register & global prediction table - no need to initialize
 	}
 
 	StateMachine state = WNT;
@@ -308,51 +302,78 @@ void BP_update(uint32_t pc, uint32_t targetPc, bool taken, uint32_t pred_dst){
 	if (brPredictor.historyIsGlobal && brPredictor.tableIsGlobal) {
 		// getting current state
 		state = brPredictor.globalPredTable[calcTableIndex(brPredictor.globalBHR, pc)];
+//		printf("taken is: %d\n", taken);
+//		printf("pre update -- index is: %d , state is: %d\n", calcTableIndex(brPredictor.globalBHR, pc), state);
+		if (flushResolve(state, taken, diff_tag, targetPc, pred_dst)) {
+//			printf("the pipe was flushed\n");
+			brPredictor.Stats.flush_num++;
+		}
 		// if branch is taken and the current state is NOT strong taken we need to change it
 		if (taken && state != ST) {
 			brPredictor.globalPredTable[calcTableIndex(brPredictor.globalBHR, pc)]++;
+//			printf("post update1 -- index is: %d , state is: %d\n", calcTableIndex(brPredictor.globalBHR, pc), brPredictor.globalPredTable[calcTableIndex(brPredictor.globalBHR, pc)]);
 		}
 		// if branch is taken and the current state is NOT strong taken we need to change it
 		else if (!taken && state != SNT) {
 			brPredictor.globalPredTable[calcTableIndex(brPredictor.globalBHR, pc)]--;
+//			printf("post update2 -- index is: %d , state is: %d\n", calcTableIndex(brPredictor.globalBHR, pc), brPredictor.globalPredTable[calcTableIndex(brPredictor.globalBHR, pc)]);
 		}
+//		printf("post update -- index is: %d , state is: %d\n", calcTableIndex(brPredictor.globalBHR, pc), brPredictor.globalPredTable[calcTableIndex(brPredictor.globalBHR, pc)]);
+		updateBHR(brPredictor.globalBHR, taken);
+//		printf("post update -- new index is: %d \n\n", calcTableIndex(brPredictor.globalBHR, pc));
 	}
 	// using local history & global table
 	else if (!brPredictor.historyIsGlobal && brPredictor.tableIsGlobal) {
 		// getting current state
-		state = brPredictor.globalPredTable[calcTableIndex(entry.localBHR, pc)];
-		if (taken && state != ST) {
-			brPredictor.globalPredTable[calcTableIndex(entry.localBHR, pc)]++;
-		} else if (!taken && state != SNT) {
-			brPredictor.globalPredTable[calcTableIndex(entry.localBHR, pc)]--;
+		state = brPredictor.globalPredTable[calcTableIndex(entry->localBHR, pc)];
+		if (flushResolve(state, taken, diff_tag, targetPc, pred_dst)) {
+//			printf("the pipe was flushed\n");
+			brPredictor.Stats.flush_num++;
 		}
+		if (taken && state != ST) {
+			brPredictor.globalPredTable[calcTableIndex(entry->localBHR, pc)]++;
+		} else if (!taken && state != SNT) {
+			brPredictor.globalPredTable[calcTableIndex(entry->localBHR, pc)]--;
+		}
+		updateBHR(entry->localBHR, taken);
 	}
 	// using global history & local table
 	else if (brPredictor.historyIsGlobal && !brPredictor.tableIsGlobal) {
 		// getting current state
-		state = entry.localPredTable[calcTableIndex(brPredictor.globalBHR, pc)];
-		if (taken && state != ST) {
-			entry.localPredTable[calcTableIndex(brPredictor.globalBHR, pc)]++;
-		} else if (!taken && state != SNT) {
-			entry.localPredTable[calcTableIndex(brPredictor.globalBHR, pc)]--;
+		state = entry->localPredTable[calcTableIndex(brPredictor.globalBHR, pc)];
+		if (flushResolve(state, taken, diff_tag, targetPc, pred_dst)) {
+//			printf("the pipe was flushed\n");
+			brPredictor.Stats.flush_num++;
 		}
+		if (taken && state != ST) {
+			entry->localPredTable[calcTableIndex(brPredictor.globalBHR, pc)]++;
+		} else if (!taken && state != SNT) {
+			entry->localPredTable[calcTableIndex(brPredictor.globalBHR, pc)]--;
+		}
+		updateBHR(brPredictor.globalBHR, taken);
 	}
 	// using local history & local table
 	else if (!brPredictor.historyIsGlobal && !brPredictor.tableIsGlobal) {
 		// getting current state
-		state = entry.localPredTable[calcTableIndex(entry.localBHR, pc)];
-		if (taken && state != ST) {
-			entry.localPredTable[calcTableIndex(entry.localBHR, pc)]++;
-		} else if (!taken && state != SNT) {
-			entry.localPredTable[calcTableIndex(entry.localBHR, pc)]--;
+		state = entry->localPredTable[calcTableIndex(entry->localBHR, pc)];
+//		printf("taken is: %d\n", taken);
+//		printf("pre update -- index is: %d , state is: %d\n", calcTableIndex(entry->localBHR, pc), state);
+		if (flushResolve(state, taken, diff_tag, targetPc, pred_dst)) {
+//			printf("the pipe was flushed\n");
+			brPredictor.Stats.flush_num++;
 		}
+//		printf(" -- state is: %d -- \n", state);
+		if (taken && state != ST) {
+			entry->localPredTable[calcTableIndex(entry->localBHR, pc)]++;
+		} else if (!taken && state != SNT) {
+			entry->localPredTable[calcTableIndex(entry->localBHR, pc)]--;
+		}
+//		printf("post update -- index is: %d , state is: %d\n", calcTableIndex(entry->localBHR, pc), entry->localPredTable[calcTableIndex(entry->localBHR, pc)]);
+		updateBHR(entry->localBHR, taken);
+//		printf("post update -- new index is: %d \n\n", calcTableIndex(entry->localBHR, pc));
 	}
 	// changing target according to targetPc
-	entry.target = targetPc;
-	// if targetPc is different from prediction destination and branch is taken, we need to flush the pipe
-	if (targetPc != pred_dst && taken) {
-		brPredictor.Stats.flush_num++;
-	}
+	entry->target = targetPc;
 	brPredictor.Stats.br_num++;
 }
 
