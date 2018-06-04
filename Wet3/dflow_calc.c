@@ -47,7 +47,7 @@ ProgCtx analyzeProg(const unsigned int opsLatency[],  InstInfo progTrace[], unsi
 	graph->entry->dp1 = NULL;
 	graph->entry->dp2 = NULL;
 	graph->entry->depth = 0;
-	graph->entry->id = -1;
+	graph->entry->id = ENTRYID;
 	graph->entry->info = NULL;
 
 	for (int i = 0 ; i < numOfInsts ; i++) {
