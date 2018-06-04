@@ -6,6 +6,8 @@
 #include <stdbool.h>
 #include "dflow_calc.h"
 
+#define ENTRYID -1
+
 typedef struct cmd_node cmdNode;
 typedef struct dp_graph *DPGraph;
 
@@ -21,8 +23,8 @@ struct cmd_node{
 struct dp_graph {
 	cmdNode entry;
 	cmdNode* cmd_pArray;
-	unsigned int depth;
 	unsigned int numOfInsts;
+	unsigned int depth;
 };
 
 ProgCtx analyzeProg(const unsigned int opsLatency[],  InstInfo progTrace[], unsigned int numOfInsts) {
@@ -101,11 +103,29 @@ int getInstDepth(ProgCtx ctx, unsigned int theInst) {
 }
 
 int getInstDeps(ProgCtx ctx, unsigned int theInst, int *src1DepInst, int *src2DepInst) {
+	if (ctx == NULL || theInst >= ((DPGraph)ctx)->numOfInsts)
+		return -1;
+	if (((DPGraph)ctx)->cmd_pArray[theInst]->dp1->id == ENTRYID) {
+		*src1DepInst = ENTRYID;
+		*src2DepInst = ENTRYID;
+		return 0;
+	}
+	else {
+		*src1DepInst = ((DPGraph)ctx)->cmd_pArray[theInst]->dp1->id;
+		if (((DPGraph)ctx)->cmd_pArray[theInst]->dp2 == NULL)
+			*src2DepInst = ENTRYID;
+		else
+			*src2DepInst = ((DPGraph)ctx)->cmd_pArray[theInst]->dp2->id;;
+		return 0;
+	}
     return -1;
 }
 
 int getProgDepth(ProgCtx ctx) {
-    return 0;
+	if (ctx == NULL)
+		return 0;
+	else
+		return ((DPGraph)ctx)->depth;
 }
 
 
