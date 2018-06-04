@@ -95,7 +95,6 @@ void freeProgCtx(ProgCtx ctx) {
 		free(((DPGraph)ctx)->cmd_pArray);
 		free(ctx);
 	}
-
 }
 
 int getInstDepth(ProgCtx ctx, unsigned int theInst) {
