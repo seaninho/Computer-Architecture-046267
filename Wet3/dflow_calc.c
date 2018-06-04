@@ -99,7 +99,10 @@ void freeProgCtx(ProgCtx ctx) {
 }
 
 int getInstDepth(ProgCtx ctx, unsigned int theInst) {
-    return -1;
+	if (ctx == NULL || theInst >= ((DPGraph)ctx)->numOfInsts) {
+		return -1;
+	}
+    return (((DPGraph)ctx)->cmd_pArray[theInst]->depth);
 }
 
 int getInstDeps(ProgCtx ctx, unsigned int theInst, int *src1DepInst, int *src2DepInst) {
