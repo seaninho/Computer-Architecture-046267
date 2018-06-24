@@ -3,6 +3,8 @@
 #include <fstream>
 #include <sstream>
 
+#define MAX_SIZE 32
+
 using std::FILE;
 using std::string;
 using std::cout;
@@ -59,6 +61,16 @@ int main(int argc, char **argv) {
 			return 0;
 		}
 	}
+
+
+	unsigned int L1setBits = L1Size-BSize-L1Assoc;
+	unsigned int L1tagBits = MAX_SIZE - L1setBits - BSize;
+	Cache L1(L1Size, L1Assoc, L1Cyc, L1setBits, L1tagBits);
+
+
+	unsigned int L2setBits = L2Size-BSize-L2Assoc;
+	unsigned int L2tagBits = MAX_SIZE - L2setBits - BSize;
+	Cache L2(L2Size, L2Assoc, L2Cyc, L2setBits, L2tagBits);
 
 	while (getline(file, line)) {
 
