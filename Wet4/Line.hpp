@@ -1,17 +1,20 @@
 #ifndef LINE_HPP_
 #define LINE_HPP_
 
+const int UNUSED_LINE = -1;
+
 class Line {
 private:
 	bool dirty;				// True if line is dirty, false otherwise
-	unsigned int tag;
+	int tag;
 public:
+	Line() : dirty(false), tag(UNUSED_LINE) {}
 	Line(bool dirty, unsigned int tag) : dirty(dirty), tag(tag) {}
 
 	bool getLineDirtyBit();
-	void setLineDirtyBit(bool dirty);
+	void setLineDirtyBit(bool newDirty);
 	unsigned int getLineTag();
-	void setLineTag(unsigned int tag);
+	void setLineTag(unsigned int newTag);
 
 };
 
