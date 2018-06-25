@@ -32,7 +32,7 @@ public:
 
 	unsigned int  getCycles();
 
-	void insert(unsigned long int address);
+	void insertAddress(unsigned long int address, bool isRead);
 
 	bool hit(unsigned long int address, bool isRead);
 
@@ -43,8 +43,6 @@ public:
 	unsigned long int lineToRemove(unsigned long int address,bool isRead);
 
 	void removeAddress(unsigned long int address);
-
-	void insertAddress(unsigned long int address, bool isRead);
 
 	bool isDirty(unsigned long int address);
 

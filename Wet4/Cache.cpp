@@ -22,24 +22,6 @@ unsigned int  Cache::getCycles() {
 		return cycles;
 }
 
-void Cache::insert(unsigned long int address) {
-	unsigned long int setNumber = getSetNumber (address);
-	unsigned long int tagNumber = getTagNumber (address);
-	bool inserte = false;
-	int size = static_cast<int>(this->Ways.size());
-	for (int i = 0 ; i  < size ; i++) {
-		if (Ways[i].find(setNumber)->second.getLineTag() == -1) {
-			Ways[i].find(setNumber)->second.setLineTag(tagNumber);
-			Ways[i].find(setNumber)->second.setLineDirtyBit(false);
-			inserte = true;
-			break;
-		}
-	}
-	if (!inserte) {
-		// TODO - noga
-	}
-}
-
 bool Cache::hit(unsigned long int address, bool isRead){
 
 }
@@ -57,7 +39,16 @@ unsigned long int Cache::lineToRemove(unsigned long int address,bool isRead) {
 }
 
 void Cache::removeAddress(unsigned long int address) {
-
+	unsigned long int setNumber = getSetNumber (address); // get the set number of the address
+	unsigned long int tagNumber = getTagNumber (address); // get the tag number of the address
+	for (int i = 0 ; i  < nWays ; i++) { // loop all thw ways until you find the matching tagNumber
+		if (Ways[i].find(setNumber)->second.getLineTag() == tagNumber) {
+			Ways[i].find(setNumber)->second.setLineDirtyBit(false);
+			Ways[i].find(setNumber)->second.setLineTag(-1);
+			Ways[i].find(setNumber)->second.setLine(0);
+			break;
+		}
+	}
 }
 
 void Cache::insertAddress(unsigned long int address, bool isRead) {
@@ -65,5 +56,12 @@ void Cache::insertAddress(unsigned long int address, bool isRead) {
 }
 
 bool Cache::isDirty(unsigned long int address) {
-
+	unsigned long int setNumber = getSetNumber (address); // get the set number of the address
+	unsigned long int tagNumber = getTagNumber (address); // get the tag number of the address
+	for (int i = 0 ; i  < nWays ; i++) { // loop all thw ways until you find the matching tagNumber
+		if (Ways[i].find(setNumber)->second.getLineTag() == tagNumber) {
+			return Ways[i].find(setNumber)->second.getLineDirtyBit(); //return if the line at this set at the WAY#i is dirty
+		}
+	}
+	return false;
 }
