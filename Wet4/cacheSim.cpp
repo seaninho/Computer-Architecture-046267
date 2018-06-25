@@ -2,6 +2,7 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
+#include <string.h>
 
 #define MAX_SIZE 32
 
@@ -28,7 +29,7 @@ int main(int argc, char **argv) {
 	ifstream file(fileString); //input file stream
 	string line;
 	if (!file || !file.good()) {
-		// File doesn't exist or some other error
+		// File doesn't hit or some other error
 		cerr << "File not found" << endl;
 		return 0;
 	}
@@ -65,12 +66,15 @@ int main(int argc, char **argv) {
 
 	unsigned int L1setBits = L1Size-BSize-L1Assoc;
 	unsigned int L1tagBits = MAX_SIZE - L1setBits - BSize;
-	Cache L1(L1Size, L1Assoc, L1Cyc, L1setBits, L1tagBits, true);
+	Cache L1(L1Size, L1Assoc, L1Cyc, L1setBits, L1tagBits);
 
 
 	unsigned int L2setBits = L2Size-BSize-L2Assoc;
 	unsigned int L2tagBits = MAX_SIZE - L2setBits - BSize;
-	Cache L2(L2Size, L2Assoc, L2Cyc, L2setBits, L2tagBits, false);
+	Cache L2(L2Size, L2Assoc, L2Cyc, L2setBits, L2tagBits);
+
+	int totalTime = 0;
+	int numOfCommand = 0;
 
 	while (getline(file, line)) {
 
@@ -83,25 +87,73 @@ int main(int argc, char **argv) {
 			return 0;
 		}
 
-		// DEBUG - remove this line
+		// DEBUG - removeAddress this line
 		cout << "operation: " << operation;
 
 		string cutAddress = address.substr(2); // Removing the "0x" part of the address
 
-		// DEBUG - remove this line
+		// DEBUG - removeAddress this line
 		cout << ", address (hex)" << cutAddress;
 
 		unsigned long int num = 0;
 		num = strtoul(cutAddress.c_str(), NULL, 16);
 
-		// DEBUG - remove this line
+		// DEBUG - removeAddress this line
 		cout << " (dec) " << num << endl;
 
+		numOfCommand++;
+
+		bool isRead = false;
+		if (operation == 'R') {
+			isRead = true;
+		}
+
+		if (L1.hit(num,isRead)) {
+			if (!isRead) {
+				L1.setLineDirty(num);
+			}
+			totalTime+=L1.getCycles();
+		} else if (L2.hit(num,isRead)) {
+			if (isRead || (!isRead && WrAlloc)) {
+				if (!(L1.setIsAvailable(num))) {
+					unsigned long int oldNumL1 = L1.lineToRemove(num,isRead); // which line should be removeAddressd
+					if (L1.isDirty(oldNumL1)) {
+						L2.setLineDirty(oldNumL1);
+					}
+				}
+				L1.insertAddress(num,isRead); // removeAddress line if necessary
+				if (!isRead) {
+					L1.setLineDirty(num);
+				}
+			} else {
+				L2.setLineDirty(num); // change LRU
+			}
+			totalTime = totalTime + L1.getCycles() + L2.getCycles();
+		} else { // miss at L1 & L2
+			if (isRead || (!isRead && WrAlloc)){
+				if (!L2.setIsAvailable(num)) {
+					unsigned long int oldNumL2 = L2.lineToRemove(num,isRead); // which line should be removeAddressd
+					L1.removeAddress(oldNumL2);	// Snooping. if line exists in L1 cache, removeAddress it. if not, do nothing
+				}
+				L2.insertAddress(num,isRead);
+				if (!(L1.setIsAvailable(num))) {  // check if set is available
+					unsigned long int oldNumL1 = L1.lineToRemove(num,isRead); // which line should be removeAddressd
+					if (L1.isDirty(oldNumL1)) {
+						L2.setLineDirty(oldNumL1);
+					}
+				}
+				L1.insertAddress(num,isRead);
+				if (!isRead) {
+					L1.setLineDirty(num);
+				}
+			}
+			totalTime = totalTime + L1.getCycles() + L2.getCycles() + MemCyc;
+		}
 	}
 
-	double L1MissRate;
-	double L2MissRate;
-	double avgAccTime;
+	double L1MissRate = L1.getMissRate();
+	double L2MissRate = L2.getMissRate();
+	double avgAccTime = ((double)totalTime)/((double)numOfCommand);
 
 	printf("L1miss=%.03f ", L1MissRate);
 	printf("L2miss=%.03f ", L2MissRate);

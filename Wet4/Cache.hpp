@@ -18,14 +18,35 @@ private:
 	unsigned int tagBits;		// Number of bits to determine the correct tag
 	unsigned int numOfHits;
 	unsigned int totalQueries;
-	bool isL1;					// True if cache is L1 cache, False otherwise
 	vector<map<unsigned int, Line>> Ways;
 	queue<unsigned int> LRUq;
 
 public:
 	Cache(unsigned int size, unsigned int nWays, unsigned int cycles,
-			unsigned int setBits, unsigned int tagBits, bool isL1,
-				unsigned int numOfHits = 0, unsigned int totalQueries = 0) {}
+			unsigned int setBits, unsigned int tagBits,
+				unsigned int numOfHits = 0, unsigned int totalQueries = 0):
+					size(size), nWays(nWays), cycles(cycles), setBits(setBits),
+					tagBits(tagBits) {}
+
+	double getMissRate();
+
+	unsigned int  getCycles();
+
+	void insert(unsigned long int address);
+
+	bool hit(unsigned long int address, bool isRead);
+
+	void setLineDirty(unsigned long int address);
+
+	bool setIsAvailable(unsigned long int address);
+
+	unsigned long int lineToRemove(unsigned long int address,bool isRead);
+
+	void removeAddress(unsigned long int address);
+
+	void insertAddress(unsigned long int address, bool isRead);
+
+	bool isDirty(unsigned long int address);
 
 
 };
