@@ -6,19 +6,20 @@ const int UNUSED_LINE = -1;
 class Line {
 private:
 	bool dirty;				// True if line is dirty, false otherwise
-	int tag;
+	unsigned long tag;
+	unsigned long addr;
 
 public:
-	Line() : dirty(false), tag(UNUSED_LINE) {}
-	Line(bool dirty, int tag, unsigned long int line) : dirty(dirty), tag(tag) {}
+//	Line() : dirty(false), tag(UNUSED_LINE){}
+	Line(bool dirty, int tag, unsigned long addr) : dirty(dirty), tag(tag), addr(addr){}
 
 	bool getLineDirtyBit();
-	void setLineDirtyBit(bool newDirty);
-	unsigned int getLineTag();
-	void setLineTag(unsigned int newTag);
+	void setLineDirtyBit(bool dirty);
+	unsigned long getLineTag();
+	void setLineTag(unsigned long tag);
+	unsigned long getLineAddr();
+	void setLineAddr(unsigned long addr);
 
 };
-
-
 
 #endif /* LINE_HPP_ */

@@ -20,7 +20,7 @@ private:
 	unsigned hits;
 	unsigned totalQueries;
 	vector<map<unsigned, Line>> Ways;
-	vector<queue<unsigned>> LRUs;
+	vector<list<unsigned>> LRUs;
 
 	unsigned long extractSet(unsigned long address);
 	unsigned long extractTag(unsigned long address);

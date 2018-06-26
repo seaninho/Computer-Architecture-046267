@@ -1,16 +1,24 @@
 bool Line::getLineDirtyBit() {
- return dirty;
+	return this->dirty;
 }
 
-void Line::setLineDirtyBit(bool newDirty) {
- this->dirty = newDirty;
+void Line::setLineDirtyBit(bool dirty) {
+	this->dirty = dirty;
 }
 
-unsigned int Line::getLineTag() {
- return tag;
+unsigned long Line::getLineTag() {
+	return this->tag;
 }
 
-void Line::setLineTag(unsigned int newTag) {
-	this->tag = newTag;
+void Line::setLineTag(unsigned long tag) {
+	this->tag = tag;
+}
+
+unsigned long Line::getLineAddr() {
+	return this->addr;
+}
+
+void Line::setLineTag(unsigned long addr) {
+	this->addr = addr;
 }
 
