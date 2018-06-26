@@ -32,6 +32,13 @@ unsigned long int Cache::extractTag (unsigned long int address) {
 	return tag;
 }
 
+void Cache::updateLRU (unsigned long int setNumber ,unsigned long int tagNumber) {
+	unsigned long int setNumber = extractSet (address); // get the set number of the address
+	unsigned long int tagNumber = extractTag (address); // get the tag number of the address
+
+
+}
+
 double Cache::getMissRate() {
 	double numOfMiss = this->totalQueries - this->numOfHits;
 	return (numOfMiss / ((double)this->totalQueries));
@@ -42,15 +49,38 @@ unsigned int  Cache::getCycles() {
 }
 
 bool Cache::hit(unsigned long int address, bool isRead){
-
+	totalQueries++;
+	unsigned long int setNumber = extractSet (address); // get the set number of the address
+	unsigned long int tagNumber = extractTag (address); // get the tag number of the address
+	for (int i = 0 ; i  < nWays ; i++) { // loop all thw ways until you find the matching tagNumber
+		if (Ways[i].find(setNumber)->second.getLineTag() == tagNumber) {
+			numOfHits++;
+			updateLRU(setNumber, tagNumber);
+			return true;
+		}
+	}
+	return false;
 }
 
 void Cache::setLineDirty(unsigned long int address) {
-
+	unsigned long int setNumber = extractSet (address); // get the set number of the address
+	unsigned long int tagNumber = extractTag (address); // get the tag number of the address
+	for (int i = 0 ; i  < nWays ; i++) { // loop all thw ways until you find the matching tagNumber
+		if (Ways[i].find(setNumber)->second.getLineTag() == tagNumber) {
+			Ways[i].find(setNumber)->second.setLineDirtyBit(true);
+			break;
+		}
+	}
 }
 
 bool Cache::setIsAvailable(unsigned long int address) {
-
+	unsigned long int setNumber = extractSet (address); // get the set number of the address
+	for (int i = 0 ; i  < nWays ; i++) { // loop all thw ways until you find the matching tagNumber
+		if (Ways[i].find(setNumber)->second.getLineTag() == -1) {
+			return true;
+		}
+	}
+	return false;
 }
 
 unsigned long int Cache::lineToRemove(unsigned long int address,bool isRead) {
