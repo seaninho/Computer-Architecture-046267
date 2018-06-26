@@ -21,6 +21,12 @@ int main(int argc, char **argv) {
 		return 0;
 	}
 
+	if (argc > 19) {
+		cerr << "Too many arguments" << endl;
+		return 0;
+	}
+
+
 	// Get input arguments
 
 	// File
@@ -74,7 +80,7 @@ int main(int argc, char **argv) {
 	Cache L2(L2Size, L2Assoc, L2Cyc, L2setBits, L2tagBits);
 
 	int totalTime = 0;
-	int numOfCommand = 0;
+	int totalCommands = 0;
 
 	while (getline(file, line)) {
 
@@ -101,7 +107,7 @@ int main(int argc, char **argv) {
 		// DEBUG - removeAddress this line
 		cout << " (dec) " << num << endl;
 
-		numOfCommand++;
+		totalCommands++;
 
 		bool isRead = false;
 		if (operation == 'R') {
@@ -153,7 +159,7 @@ int main(int argc, char **argv) {
 
 	double L1MissRate = L1.getMissRate();
 	double L2MissRate = L2.getMissRate();
-	double avgAccTime = ((double)totalTime)/((double)numOfCommand);
+	double avgAccTime = ((double)totalTime)/((double)totalCommands);
 
 	printf("L1miss=%.03f ", L1MissRate);
 	printf("L2miss=%.03f ", L2MissRate);

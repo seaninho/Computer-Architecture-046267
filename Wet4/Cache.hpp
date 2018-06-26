@@ -21,6 +21,8 @@ private:
 	vector<map<unsigned int, Line>> Ways;
 	queue<unsigned int> LRUq;
 
+	unsigned long int extractSet(unsigned long int address);
+	unsigned long int extractTag(unsigned long int address);
 public:
 	Cache(unsigned int size, unsigned int nWays, unsigned int cycles,
 			unsigned int setBits, unsigned int tagBits,
@@ -30,7 +32,7 @@ public:
 
 	double getMissRate();
 
-	unsigned int  getCycles();
+	unsigned int getCycles();
 
 	void insertAddress(unsigned long int address, bool isRead);
 

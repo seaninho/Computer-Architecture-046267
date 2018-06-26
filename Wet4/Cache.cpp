@@ -1,18 +1,31 @@
 #include "Cache.hpp"
 
-//****************** STATIC FUNCTION ******************//
+/*
+ * createBitMask - creates a bit mask in a specific size
+ * param[in] size - the wanted mask size (in bits)
+ */
+static unsigned long int createBitMask(unsigned int size) {
+	unsigned long int mask = 0;
+	for (int i = 0 ; i < size ; ++i) {
+		mask |= 1 << i;
+	}
+	return mask;
+}
 
-unsigned long int getSetNumber (unsigned long int address) {
+unsigned long int Cache::extractSet (unsigned long int address) {
+	unsigned long int set = 0;
+	if (this->setBits = 0)
+		return set;
+	unsigned long int bit_mask = createBitMask(this->setBits);
+	set = address & bit_mask;
+	return set;
+}
+
+unsigned long int Cache::extractTag (unsigned long int address) {
 	// TODO
 	return 0;
 }
 
-unsigned long int getTagNumber (unsigned long int address) {
-	// TODO
-	return 0;
-}
-
-//********************  FUNCTIONS ********************//
 double Cache::getMissRate() {
 	double numOfMiss = this->totalQueries - this->numOfHits;
 	return (numOfMiss / ((double)this->totalQueries));
