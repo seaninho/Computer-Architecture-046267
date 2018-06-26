@@ -31,7 +31,9 @@ public:
 				size(size), nWays(nWays), cycles(cycles), blockSize(blockSize),
 				setBits(setBits), tagBits(tagBits), hits(0), totalQueries(0) {
 		for (int i = 0 ; i < nWays ; i++) {
-			Ways[i];
+			int setSize = pow(2, (double)setBits);
+			for (int setNum = 0 ; setNum < setSize ; setNum)
+			Ways[i].insert(pair<unsigned, Line>());
 		}
 
 	}
