@@ -20,7 +20,7 @@ private:
 	unsigned tagBits;		// Number of bits to determine the correct tag
 	unsigned hits;
 	unsigned totalQueries;
-	vector< map< unsigned, Line > > Ways;
+	vector< map<unsigned, Line> > Ways;
 	vector< list< int > > LRUs;
 
 	unsigned long extractSet(unsigned long address);

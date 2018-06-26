@@ -34,7 +34,7 @@ unsigned long Cache::extractTag (unsigned long address) {
 
 void Cache::updateLRU (unsigned long int setNumber ,int wayNumber) {
 	for (_List_iterator<int> it = LRUs[setNumber].begin();
-			it < LRUs[setNumber].end(); it++) {
+			it != LRUs[setNumber].end(); it++) {
 		if (*it == wayNumber) {
 			LRUs[setNumber].erase(it);
 		}
@@ -107,7 +107,7 @@ void Cache::removeAddress(unsigned long address) {
 			Ways[i].find(setNumber)->second.setInit(false);
 
 			for (_List_iterator<int> it = LRUs[setNumber].begin();
-					it < LRUs[setNumber].end(); it++) {
+					it != LRUs[setNumber].end(); it++) {
 				if (*it == i) {
 					LRUs[setNumber].erase(it);
 				}
@@ -130,7 +130,8 @@ void Cache::insertAddress(unsigned long address) {
 		}
 	}
 	if (wayNumber < 0) {
-		wayNumber = LRUs[setNumber].pop_front();
+		wayNumber = LRUs[setNumber].front();
+		LRUs[setNumber].pop_front();
 	}
 
 	Ways[wayNumber].find(setNumber)->second.setLineAddr(address);
