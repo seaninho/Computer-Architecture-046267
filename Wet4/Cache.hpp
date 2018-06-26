@@ -14,6 +14,7 @@ private:
 	unsigned int size; 			// Cache size in bytes
 	unsigned int nWays;			// Associativity
 	unsigned int cycles;		// Number of cycles required to access cache
+	unsigned int blockSize;
 	unsigned int setBits;		// Number of bits to determine the correct set
 	unsigned int tagBits;		// Number of bits to determine the correct tag
 	unsigned int numOfHits;
@@ -25,10 +26,10 @@ private:
 	unsigned long int extractTag(unsigned long int address);
 public:
 	Cache(unsigned int size, unsigned int nWays, unsigned int cycles,
-			unsigned int setBits, unsigned int tagBits,
+			unsigned int blockSize, unsigned int setBits, unsigned int tagBits,
 				unsigned int numOfHits = 0, unsigned int totalQueries = 0):
-					size(size), nWays(nWays), cycles(cycles), setBits(setBits),
-					tagBits(tagBits) {}
+					size(size), nWays(nWays), cycles(cycles), blockSize(blockSize),
+					setBits(setBits), tagBits(tagBits) {}
 
 	double getMissRate();
 

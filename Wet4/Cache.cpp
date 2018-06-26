@@ -14,16 +14,22 @@ static unsigned long int createBitMask(unsigned int size) {
 
 unsigned long int Cache::extractSet (unsigned long int address) {
 	unsigned long int set = 0;
-	if (this->setBits = 0)
+	unsigned long int shifted_addr = address >> this->blockSize;
+	if (this->setBits == 0)
 		return set;
 	unsigned long int bit_mask = createBitMask(this->setBits);
-	set = address & bit_mask;
+	set = shifted_addr & bit_mask;
 	return set;
 }
 
 unsigned long int Cache::extractTag (unsigned long int address) {
-	// TODO
-	return 0;
+	unsigned long int tag = 0;
+	unsigned long int shifted_addr = address >> this->blockSize;
+	if (this->tagBits == 0)
+		return tag;
+	unsigned long int bit_mask = createBitMask(this->tagBits);
+	tag = shifted_addr & bit_mask;
+	return tag;
 }
 
 double Cache::getMissRate() {
@@ -52,9 +58,9 @@ unsigned long int Cache::lineToRemove(unsigned long int address,bool isRead) {
 }
 
 void Cache::removeAddress(unsigned long int address) {
-	unsigned long int setNumber = getSetNumber (address); // get the set number of the address
-	unsigned long int tagNumber = getTagNumber (address); // get the tag number of the address
-	for (int i = 0 ; i  < nWays ; i++) { // loop all thw ways until you find the matching tagNumber
+	unsigned long int setNumber = extractSet(address); // get the set number of the address
+	unsigned long int tagNumber = extractTag(address); // get the tag number of the address
+	for (int i = 0 ; i < nWays ; i++) { // loop all the ways until you find the matching tagNumber
 		if (Ways[i].find(setNumber)->second.getLineTag() == tagNumber) {
 			Ways[i].find(setNumber)->second.setLineDirtyBit(false);
 			Ways[i].find(setNumber)->second.setLineTag(-1);
@@ -69,9 +75,9 @@ void Cache::insertAddress(unsigned long int address, bool isRead) {
 }
 
 bool Cache::isDirty(unsigned long int address) {
-	unsigned long int setNumber = getSetNumber (address); // get the set number of the address
-	unsigned long int tagNumber = getTagNumber (address); // get the tag number of the address
-	for (int i = 0 ; i  < nWays ; i++) { // loop all thw ways until you find the matching tagNumber
+	unsigned long int setNumber = extractSet(address); // get the set number of the address
+	unsigned long int tagNumber = extractTag(address); // get the tag number of the address
+	for (int i = 0 ; i < nWays ; i++) { // loop all the ways until you find the matching tagNumber
 		if (Ways[i].find(setNumber)->second.getLineTag() == tagNumber) {
 			return Ways[i].find(setNumber)->second.getLineDirtyBit(); //return if the line at this set at the WAY#i is dirty
 		}
