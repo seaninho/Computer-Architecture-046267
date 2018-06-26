@@ -60,7 +60,7 @@ bool Cache::hit(unsigned long address){
 		if (Ways[i].find(setNumber)->second.isInit() &&
 				Ways[i].find(setNumber)->second.getLineTag() == tagNumber) {
 			hits++;
-			updateLRU(setNumber, tagNumber);
+			updateLRU(setNumber, i);
 			return true;
 		}
 	}
@@ -147,7 +147,7 @@ void Cache::insertAddress(unsigned long address) {
 	Ways[wayNumber].find(setNumber)->second.setLineTag(tagNumber);
 	Ways[wayNumber].find(setNumber)->second.setLineDirtyBit(false);
 	Ways[wayNumber].find(setNumber)->second.setInit(true);
-
+// cout << "Cache.cpp line156 - insertAddress LRUs[setNumber].push_back(" << wayNumber << ")" << endl;
 	LRUs[setNumber].push_back(wayNumber);
 }
 

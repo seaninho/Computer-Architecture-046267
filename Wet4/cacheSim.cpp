@@ -101,23 +101,23 @@ int main(int argc, char **argv) {
 		num = strtoul(cutAddress.c_str(), NULL, 16);
 
 		// DEBUG - remove this line
-//		cout << " (dec) " << num << endl;
+//		cout << " (dec) " << num; // << endl;
 
 		totalCommands++;
 
 		bool isRead = false;
-		if (operation == 'R') {
+		if (operation == 'r') {
 			isRead = true;
 		}
 
 		if (L1.hit(num)) {
-//			cout << "cachSim.cpp : line 114" << endl;
+//			cout << " - L1 hit " << endl;
 			if (!isRead) {
 				L1.setLineDirty(num);
 			}
 			totalTime += L1.getCycles();
 		} else if (L2.hit(num)) {
-//			cout << "cachSim.cpp : line 120" << endl;
+//			cout << " - L2 hit" << endl;
 			if (isRead || (!isRead && WrAlloc)) {
 				if (!(L1.setIsAvailable(num))) {
 					unsigned long oldNumL1 = L1.lineToRemove(num); // which line should be removeAddressd
@@ -134,7 +134,7 @@ int main(int argc, char **argv) {
 			}
 			totalTime = totalTime + L1.getCycles() + L2.getCycles();
 		} else { // miss at L1 & L2
-//			cout << "cachSim.cpp : line 137" << endl;
+//			cout << " - miss" << endl;
 			if (isRead || (!isRead && WrAlloc)){
 				if (!L2.setIsAvailable(num)) {
 					unsigned long int oldNumL2 = L2.lineToRemove(num); // which line should be removeAddressd
@@ -155,6 +155,8 @@ int main(int argc, char **argv) {
 				if (!isRead) {
 					L1.setLineDirty(num);
 				}
+			} else {
+
 			}
 			totalTime = totalTime + L1.getCycles() + L2.getCycles() + MemCyc;
 		}
