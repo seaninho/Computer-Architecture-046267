@@ -43,7 +43,7 @@ public:
 
 	unsigned getCycles();
 
-	void insertAddress(unsigned long address, bool isRead);
+	void insertAddress(unsigned long address);
 
 	bool hit(unsigned long address);
 
@@ -51,7 +51,7 @@ public:
 
 	bool setIsAvailable(unsigned long address);
 
-	unsigned long lineToRemove(unsigned long address, bool isRead);
+	unsigned long lineToRemove(unsigned long address);
 
 	void removeAddress(unsigned long address);
 

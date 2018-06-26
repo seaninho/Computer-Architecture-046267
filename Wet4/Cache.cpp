@@ -33,8 +33,8 @@ unsigned long Cache::extractTag (unsigned long address) {
 }
 
 void Cache::updateLRU (unsigned long int setNumber ,int wayNumber) {
-	for (_List_iterator<int> it = LRUs[setNumber].begin() ;
-			it < LRUs[setNumber].end() ; it++) {
+	for (_List_iterator<int> it = LRUs[setNumber].begin();
+			it < LRUs[setNumber].end(); it++) {
 		if (*it == wayNumber) {
 			LRUs[setNumber].erase(it);
 		}
@@ -90,7 +90,7 @@ bool Cache::setIsAvailable(unsigned long address) {
 }
 
 
-unsigned long Cache::lineToRemove(unsigned long address,bool isRead) {
+unsigned long Cache::lineToRemove(unsigned long address) {
 	unsigned long setNumber = extractSet(address);
 	_List_iterator<int> it = LRUs[setNumber].begin();
 	return (Ways[*it].find(setNumber)->second.getLineAddr());
@@ -106,8 +106,8 @@ void Cache::removeAddress(unsigned long address) {
 			Ways[i].find(setNumber)->second.setLineTag(0);
 			Ways[i].find(setNumber)->second.setInit(false);
 
-			for (_List_iterator<int> it = LRUs[setNumber].begin() ;
-					it < LRUs[setNumber].end() ; it++) {
+			for (_List_iterator<int> it = LRUs[setNumber].begin();
+					it < LRUs[setNumber].end(); it++) {
 				if (*it == i) {
 					LRUs[setNumber].erase(it);
 				}
@@ -118,10 +118,11 @@ void Cache::removeAddress(unsigned long address) {
 	}
 }
 
-void Cache::insertAddress(unsigned long address, bool isRead) {
+void Cache::insertAddress(unsigned long address) {
 	unsigned long setNumber = extractSet(address);
 	unsigned long tagNumber = extractTag(address);
 	int wayNumber = -1;
+
 	for (int i = 0; i < nWays; i++) {
 		if (Ways[i].find(setNumber)->second.isInit() == false) {
 			wayNumber = i;
@@ -131,14 +132,13 @@ void Cache::insertAddress(unsigned long address, bool isRead) {
 	if (wayNumber < 0) {
 		wayNumber = LRUs[setNumber].pop_front();
 	}
+
 	Ways[wayNumber].find(setNumber)->second.setLineAddr(address);
 	Ways[wayNumber].find(setNumber)->second.setLineTag(tagNumber);
 	Ways[wayNumber].find(setNumber)->second.setLineDirtyBit(false);
 	Ways[wayNumber].find(setNumber)->second.setInit(true);
 
 	LRUs[setNumber].push_back(wayNumber);
-
-
 }
 
 bool Cache::isDirty(unsigned long address) {

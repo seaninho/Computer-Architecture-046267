@@ -93,18 +93,18 @@ int main(int argc, char **argv) {
 			return 0;
 		}
 
-		// DEBUG - removeAddress this line
+		// DEBUG - remove this line
 		cout << "operation: " << operation;
 
 		string cutAddress = address.substr(2); // Removing the "0x" part of the address
 
-		// DEBUG - removeAddress this line
+		// DEBUG - remove this line
 		cout << ", address (hex)" << cutAddress;
 
 		unsigned long int num = 0;
 		num = strtoul(cutAddress.c_str(), NULL, 16);
 
-		// DEBUG - removeAddress this line
+		// DEBUG - remove this line
 		cout << " (dec) " << num << endl;
 
 		totalCommands++;
@@ -118,16 +118,16 @@ int main(int argc, char **argv) {
 			if (!isRead) {
 				L1.setLineDirty(num);
 			}
-			totalTime+=L1.getCycles();
+			totalTime += L1.getCycles();
 		} else if (L2.hit(num)) {
 			if (isRead || (!isRead && WrAlloc)) {
 				if (!(L1.setIsAvailable(num))) {
-					unsigned long int oldNumL1 = L1.lineToRemove(num,isRead); // which line should be removeAddressd
+					unsigned long oldNumL1 = L1.lineToRemove(num); // which line should be removeAddressd
 					if (L1.isDirty(oldNumL1)) {
 						L2.setLineDirty(oldNumL1);
 					}
 				}
-				L1.insertAddress(num,isRead); // removeAddress line if necessary
+				L1.insertAddress(num); // removeAddress line if necessary
 				if (!isRead) {
 					L1.setLineDirty(num);
 				}
@@ -138,17 +138,17 @@ int main(int argc, char **argv) {
 		} else { // miss at L1 & L2
 			if (isRead || (!isRead && WrAlloc)){
 				if (!L2.setIsAvailable(num)) {
-					unsigned long int oldNumL2 = L2.lineToRemove(num,isRead); // which line should be removeAddressd
+					unsigned long int oldNumL2 = L2.lineToRemove(num); // which line should be removeAddressd
 					L1.removeAddress(oldNumL2);	// Snooping. if line exists in L1 cache, removeAddress it. if not, do nothing
 				}
-				L2.insertAddress(num,isRead);
+				L2.insertAddress(num);
 				if (!(L1.setIsAvailable(num))) {  // check if set is available
-					unsigned long int oldNumL1 = L1.lineToRemove(num,isRead); // which line should be removeAddressd
+					unsigned long int oldNumL1 = L1.lineToRemove(num); // which line should be removeAddressd
 					if (L1.isDirty(oldNumL1)) {
 						L2.setLineDirty(oldNumL1);
 					}
 				}
-				L1.insertAddress(num,isRead);
+				L1.insertAddress(num);
 				if (!isRead) {
 					L1.setLineDirty(num);
 				}
