@@ -5,6 +5,7 @@
 #include <map>
 #include <list>
 #include <cmath>
+#include <utility>
 #include "Line.hpp"
 
 using namespace std;
@@ -19,21 +20,21 @@ private:
 	unsigned tagBits;		// Number of bits to determine the correct tag
 	unsigned hits;
 	unsigned totalQueries;
-	vector<map<unsigned, Line>> Ways;
-	vector<list<int>> LRUs;
+	vector< map< unsigned, Line > > Ways;
+	vector< list< int > > LRUs;
 
 	unsigned long extractSet(unsigned long address);
 	unsigned long extractTag(unsigned long address);
 	void updateLRU(unsigned long setNumber ,int wayNumber);
 public:
 	Cache(unsigned size, unsigned nWays, unsigned cycles, unsigned blockSize,
-			unsigned setBits, unsigned tagBits,	unsigned hits, unsigned totalQueries) :
+			unsigned setBits, unsigned tagBits) :
 				size(size), nWays(nWays), cycles(cycles), blockSize(blockSize),
 				setBits(setBits), tagBits(tagBits), hits(0), totalQueries(0) {
 		int setSize = pow(2, (double)setBits);
 		for (int i = 0 ; i < nWays ; i++) {
 			for (int setNum = 0 ; setNum < setSize ; setNum) {
-				Line empty_line = new Line();
+				Line empty_line();
 				Ways[i].insert(pair<unsigned, Line>(setNum, empty_line));
 			}
 		}

@@ -3,6 +3,7 @@
 #include <fstream>
 #include <sstream>
 #include <string.h>
+#include "Cache.hpp"
 
 #define MAX_SIZE 32
 
