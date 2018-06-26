@@ -1,3 +1,5 @@
+#include "Line.hpp"
+
 bool Line::isInit() {
 	return this->init;
 }
@@ -26,7 +28,7 @@ unsigned long Line::getLineAddr() {
 	return this->addr;
 }
 
-void Line::setLineTag(unsigned long addr) {
+void Line::setLineAddr(unsigned long addr) {
 	this->addr = addr;
 }
 

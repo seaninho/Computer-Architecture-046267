@@ -20,7 +20,7 @@ private:
 	unsigned tagBits;		// Number of bits to determine the correct tag
 	unsigned hits;
 	unsigned totalQueries;
-	vector< map< unsigned, Line > > Ways;
+	vector< map<unsigned, Line> > Ways;
 	vector< list< int > > LRUs;
 
 	unsigned long extractSet(unsigned long address);
@@ -33,8 +33,9 @@ public:
 				setBits(setBits), tagBits(tagBits), hits(0), totalQueries(0) {
 		int setSize = pow(2, (double)setBits);
 		for (int i = 0 ; i < nWays ; i++) {
+			map<unsigned, Line> Ways[i];
 			for (int setNum = 0 ; setNum < setSize ; setNum) {
-				Line empty_line();
+				Line empty_line;
 				Ways[i].insert(pair<unsigned, Line>(setNum, empty_line));
 			}
 		}

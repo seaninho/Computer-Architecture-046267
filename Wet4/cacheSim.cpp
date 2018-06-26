@@ -22,11 +22,6 @@ int main(int argc, char **argv) {
 		return 0;
 	}
 
-	if (argc > 19) {
-		cerr << "Too many arguments" << endl;
-		return 0;
-	}
-
 
 	// Get input arguments
 
