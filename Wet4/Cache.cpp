@@ -37,9 +37,9 @@ void Cache::updateLRU (unsigned long int setNumber ,int wayNumber) {
 			it < LRUs[setNumber].end() ; it++) {
 		if (*it == wayNumber) {
 			LRUs[setNumber].erase(it);
-			LRUs[setNumber].push_back(wayNumber);
 		}
 	}
+	LRUs[setNumber].push_back(wayNumber);
 }
 
 double Cache::getMissRate() {
@@ -91,7 +91,7 @@ bool Cache::setIsAvailable(unsigned long address) {
 unsigned long Cache::lineToRemove(unsigned long address,bool isRead) {
 	unsigned long setNumber = extractSet(address);
 	_List_iterator<int> it = LRUs[setNumber].begin();
-	return (Ways[*it].find(setNumber)->second.getLine());
+	return (Ways[*it].find(setNumber)->second.getLineAddr());
 }
 
 void Cache::removeAddress(unsigned long address) {
@@ -100,7 +100,7 @@ void Cache::removeAddress(unsigned long address) {
 	for (int i = 0; i < nWays; i++) {
 		if (Ways[i].find(setNumber)->second.getLineTag() == tagNumber) {
 			Ways[i].find(setNumber)->second.setLineDirtyBit(false);
-			Ways[i].find(setNumber)->second.setLineTag(-1);
+			Ways[i].find(setNumber)->second.setLineTag(0);
 
 			for (_List_iterator<int> it = LRUs[setNumber].begin() ;
 					it < LRUs[setNumber].end() ; it++) {

@@ -30,12 +30,13 @@ public:
 			unsigned setBits, unsigned tagBits,	unsigned hits, unsigned totalQueries) :
 				size(size), nWays(nWays), cycles(cycles), blockSize(blockSize),
 				setBits(setBits), tagBits(tagBits), hits(0), totalQueries(0) {
+		int setSize = pow(2, (double)setBits);
 		for (int i = 0 ; i < nWays ; i++) {
-			int setSize = pow(2, (double)setBits);
-			for (int setNum = 0 ; setNum < setSize ; setNum)
-			Ways[i].insert(pair<unsigned, Line>());
+			for (int setNum = 0 ; setNum < setSize ; setNum) {
+				Line empty_line = new Line();
+				Ways[i].insert(pair<unsigned, Line>(setNum, empty_line));
+			}
 		}
-
 	}
 
 	double getMissRate();
