@@ -65,18 +65,18 @@ int main(int argc, char **argv) {
 		}
 	}
 
-
 	unsigned int L1setBits = L1Size-BSize-L1Assoc;
 	unsigned int L1tagBits = MAX_SIZE - L1setBits - BSize;
-	Cache L1(L1Size, L1Assoc, L1Cyc, BSize, L1setBits, L1tagBits);
-
+	Cache L1(L1Size, pow(2, L1Assoc), L1Cyc, BSize, L1setBits, L1tagBits);
 
 	unsigned int L2setBits = L2Size-BSize-L2Assoc;
 	unsigned int L2tagBits = MAX_SIZE - L2setBits - BSize;
-	Cache L2(L2Size, L2Assoc, L2Cyc, BSize, L2setBits, L2tagBits);
+	Cache L2(L2Size, pow(2, L2Assoc), L2Cyc, BSize, L2setBits, L2tagBits);
 
 	int totalTime = 0;
 	int totalCommands = 0;
+
+	cout << "cacheSim.cpp : line 79" << endl;
 
 	while (getline(file, line)) {
 
@@ -132,8 +132,10 @@ int main(int argc, char **argv) {
 			}
 			totalTime = totalTime + L1.getCycles() + L2.getCycles();
 		} else { // miss at L1 & L2
+			cout << "cacheSim.cpp : line 135" << endl;
 			if (isRead || (!isRead && WrAlloc)){
 				if (!L2.setIsAvailable(num)) {
+					cout << "cacheSim.cpp : line 138" << endl;
 					unsigned long int oldNumL2 = L2.lineToRemove(num); // which line should be removeAddressd
 					L1.removeAddress(oldNumL2);	// Snooping. if line exists in L1 cache, removeAddress it. if not, do nothing
 				}
@@ -149,6 +151,7 @@ int main(int argc, char **argv) {
 					L1.setLineDirty(num);
 				}
 			}
+			cout << "cacheSim.cpp : line 155" << endl;
 			totalTime = totalTime + L1.getCycles() + L2.getCycles() + MemCyc;
 		}
 	}
