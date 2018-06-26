@@ -56,7 +56,8 @@ bool Cache::hit(unsigned long address){
 	unsigned long setNumber = extractSet(address); // get the set number of the address
 	unsigned long tagNumber = extractTag(address); // get the tag number of the address
 	for (int i = 0; i < nWays; i++) { // loop all the ways until you find the matching tagNumber
-		if (Ways[i].find(setNumber)->second.getLineTag() == tagNumber) {
+		if (Ways[i].find(setNumber)->second.isInit() &&
+				Ways[i].find(setNumber)->second.getLineTag() == tagNumber) {
 			hits++;
 			updateLRU(setNumber, tagNumber);
 			return true;
@@ -69,7 +70,8 @@ void Cache::setLineDirty(unsigned long address) {
 	unsigned long setNumber = extractSet(address); // get the set number of the address
 	unsigned long tagNumber = extractTag(address); // get the tag number of the address
 	for (int i = 0; i < nWays; i++) { // loop all the ways until you find the matching tagNumber
-		if (Ways[i].find(setNumber)->second.getLineTag() == tagNumber) {
+		if (Ways[i].find(setNumber)->second.isInit() &&
+				Ways[i].find(setNumber)->second.getLineTag() == tagNumber) {
 			Ways[i].find(setNumber)->second.setLineDirtyBit(true);
 			updateLRU(setNumber, i);
 			break;
@@ -80,7 +82,7 @@ void Cache::setLineDirty(unsigned long address) {
 bool Cache::setIsAvailable(unsigned long address) {
 	unsigned long setNumber = extractSet(address);
 	for (int i = 0; i < nWays; i++) {
-		if (Ways[i].find(setNumber)->second.getLineTag() == -1) {
+		if (Ways[i].find(setNumber)->second.isInit() == false) {
 			return true;
 		}
 	}
@@ -98,9 +100,11 @@ void Cache::removeAddress(unsigned long address) {
 	unsigned long setNumber = extractSet(address);
 	unsigned long tagNumber = extractTag(address);
 	for (int i = 0; i < nWays; i++) {
-		if (Ways[i].find(setNumber)->second.getLineTag() == tagNumber) {
+		if (Ways[i].find(setNumber)->second.isInit() &&
+				Ways[i].find(setNumber)->second.getLineTag() == tagNumber) {
 			Ways[i].find(setNumber)->second.setLineDirtyBit(false);
 			Ways[i].find(setNumber)->second.setLineTag(0);
+			Ways[i].find(setNumber)->second.setInit(false);
 
 			for (_List_iterator<int> it = LRUs[setNumber].begin() ;
 					it < LRUs[setNumber].end() ; it++) {
@@ -117,6 +121,23 @@ void Cache::removeAddress(unsigned long address) {
 void Cache::insertAddress(unsigned long address, bool isRead) {
 	unsigned long setNumber = extractSet(address);
 	unsigned long tagNumber = extractTag(address);
+	int wayNumber = -1;
+	for (int i = 0; i < nWays; i++) {
+		if (Ways[i].find(setNumber)->second.isInit() == false) {
+			wayNumber = i;
+			break;
+		}
+	}
+	if (wayNumber < 0) {
+		wayNumber = LRUs[setNumber].pop_front();
+	}
+	Ways[wayNumber].find(setNumber)->second.setLineAddr(address);
+	Ways[wayNumber].find(setNumber)->second.setLineTag(tagNumber);
+	Ways[wayNumber].find(setNumber)->second.setLineDirtyBit(false);
+	Ways[wayNumber].find(setNumber)->second.setInit(true);
+
+	LRUs[setNumber].push_back(wayNumber);
+
 
 }
 
@@ -124,7 +145,8 @@ bool Cache::isDirty(unsigned long address) {
 	unsigned long setNumber = extractSet(address);
 	unsigned long tagNumber = extractTag(address);
 	for (int i = 0; i < nWays; i++) {
-		if (Ways[i].find(setNumber)->second.getLineTag() == tagNumber) {
+		if (Ways[i].find(setNumber)->second.isInit() &&
+				Ways[i].find(setNumber)->second.getLineTag() == tagNumber) {
 			return Ways[i].find(setNumber)->second.getLineDirtyBit(); 	//return true if line is dirty. otherwise, false
 		}
 	}
