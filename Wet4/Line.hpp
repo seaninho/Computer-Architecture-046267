@@ -7,11 +7,10 @@ class Line {
 private:
 	bool dirty;				// True if line is dirty, false otherwise
 	int tag;
-	unsigned long int line;
+
 public:
-	Line() : dirty(false), tag(UNUSED_LINE), line(0) {}
-	Line(bool dirty, int tag, unsigned long int line) : dirty(dirty), tag(tag),
-			line(line) {}
+	Line() : dirty(false), tag(UNUSED_LINE) {}
+	Line(bool dirty, int tag, unsigned long int line) : dirty(dirty), tag(tag) {}
 
 	bool getLineDirtyBit();
 	void setLineDirtyBit(bool newDirty);

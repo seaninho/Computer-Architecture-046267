@@ -3,7 +3,7 @@
 
 #include <vector>
 #include <map>
-#include <queue>
+#include <list>
 #include <cmath>
 #include "Line.hpp"
 

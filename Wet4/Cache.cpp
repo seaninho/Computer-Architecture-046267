@@ -32,9 +32,14 @@ unsigned long Cache::extractTag (unsigned long address) {
 	return tag;
 }
 
-void Cache::updateLRU (unsigned long setNumber ,unsigned long tagNumber) {
-
-
+void Cache::updateLRU (unsigned long int setNumber ,int wayNumber) {
+	for (_List_iterator<int> it = LRUs[setNumber].begin() ;
+			it < LRUs[setNumber].end() ; it++) {
+		if (*it == wayNumber) {
+			LRUs[setNumber].erase(it);
+			LRUs[setNumber].push_back(wayNumber);
+		}
+	}
 }
 
 double Cache::getMissRate() {
@@ -66,6 +71,7 @@ void Cache::setLineDirty(unsigned long address) {
 	for (int i = 0; i < nWays; i++) { // loop all the ways until you find the matching tagNumber
 		if (Ways[i].find(setNumber)->second.getLineTag() == tagNumber) {
 			Ways[i].find(setNumber)->second.setLineDirtyBit(true);
+			updateLRU(setNumber, i);
 			break;
 		}
 	}
@@ -91,7 +97,15 @@ void Cache::removeAddress(unsigned long address) {
 	for (int i = 0; i < nWays; i++) {
 		if (Ways[i].find(setNumber)->second.getLineTag() == tagNumber) {
 			Ways[i].find(setNumber)->second.setLineDirtyBit(false);
-			Ways[i].find(setNumber)->second.setLineTag(UNUSED_LINE);
+			Ways[i].find(setNumber)->second.setLineTag(-1);
+
+			for (_List_iterator<int> it = LRUs[setNumber].begin() ;
+					it < LRUs[setNumber].end() ; it++) {
+				if (*it == i) {
+					LRUs[setNumber].erase(it);
+				}
+			}
+
 			break;
 		}
 	}
