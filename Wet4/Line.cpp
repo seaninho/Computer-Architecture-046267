@@ -1,3 +1,11 @@
+bool Line::isInit() {
+	return this->init;
+}
+
+void Line::setInit(bool init) {
+	this->init = init;
+}
+
 bool Line::getLineDirtyBit() {
 	return this->dirty;
 }
