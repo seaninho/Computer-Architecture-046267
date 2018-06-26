@@ -24,7 +24,7 @@ unsigned long Cache::extractSet (unsigned long address) {
 
 unsigned long Cache::extractTag (unsigned long address) {
 	unsigned long tag = 0;
-	unsigned long shifted_addr = address >> blockSize;
+	unsigned long shifted_addr = address >> (blockSize + setBits);
 	if (tagBits == 0)
 		return tag;
 	unsigned long bit_mask = createBitMask(tagBits);
@@ -93,7 +93,16 @@ bool Cache::setIsAvailable(unsigned long address) {
 
 unsigned long Cache::lineToRemove(unsigned long address) {
 	unsigned long setNumber = extractSet(address);
+//	cout << "Cache.cpp : line 96 - lineToRemove " << endl;
 	_List_iterator<int> it = LRUs[setNumber].begin();
+//	cout << "Cache.cpp : line 98 - lineToRemove ,  setNumber = " << setNumber << ",  *it = " << *it << endl;
+	for (int j = 0 ; j<pow(2,setBits) ; j++ ) {
+		for (_List_iterator<int> i = LRUs[j].begin();
+								i != LRUs[j].end(); i++) {
+//				cout << "set" << j  << "  -  way" << *i << endl;
+			}
+	}
+
 	return (Ways[*it].find(setNumber)->second.getLineAddr());
 }
 

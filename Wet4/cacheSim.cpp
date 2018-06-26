@@ -88,6 +88,7 @@ int main(int argc, char **argv) {
 			return 0;
 		}
 
+//		cout << "totalCommands #" << totalCommands << " - " << operation;
 		// DEBUG - remove this line
 //		cout << "operation: " << operation;
 
@@ -110,11 +111,13 @@ int main(int argc, char **argv) {
 		}
 
 		if (L1.hit(num)) {
+//			cout << "cachSim.cpp : line 114" << endl;
 			if (!isRead) {
 				L1.setLineDirty(num);
 			}
 			totalTime += L1.getCycles();
 		} else if (L2.hit(num)) {
+//			cout << "cachSim.cpp : line 120" << endl;
 			if (isRead || (!isRead && WrAlloc)) {
 				if (!(L1.setIsAvailable(num))) {
 					unsigned long oldNumL1 = L1.lineToRemove(num); // which line should be removeAddressd
@@ -131,6 +134,7 @@ int main(int argc, char **argv) {
 			}
 			totalTime = totalTime + L1.getCycles() + L2.getCycles();
 		} else { // miss at L1 & L2
+//			cout << "cachSim.cpp : line 137" << endl;
 			if (isRead || (!isRead && WrAlloc)){
 				if (!L2.setIsAvailable(num)) {
 					unsigned long int oldNumL2 = L2.lineToRemove(num); // which line should be removeAddressd
@@ -138,11 +142,15 @@ int main(int argc, char **argv) {
 				}
 				L2.insertAddress(num);
 				if (!(L1.setIsAvailable(num))) {  // check if set is available
+//					cout << "cachSim.cpp : line 147" << endl;
 					unsigned long int oldNumL1 = L1.lineToRemove(num); // which line should be removeAddressd
+//					cout << "cachSim.cpp : line 149" << endl;
 					if (L1.isDirty(oldNumL1)) {
+//						cout << "cachSim.cpp : line 151" << endl;
 						L2.setLineDirty(oldNumL1);
 					}
 				}
+//				cout << "cachSim.cpp : line 156" << endl;
 				L1.insertAddress(num);
 				if (!isRead) {
 					L1.setLineDirty(num);
