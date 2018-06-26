@@ -37,6 +37,7 @@ void Cache::updateLRU (unsigned long int setNumber ,int wayNumber) {
 			it != LRUs[setNumber].end(); it++) {
 		if (*it == wayNumber) {
 			LRUs[setNumber].erase(it);
+			break;
 		}
 	}
 	LRUs[setNumber].push_back(wayNumber);
@@ -80,11 +81,8 @@ void Cache::setLineDirty(unsigned long address) {
 }
 
 bool Cache::setIsAvailable(unsigned long address) {
-	cout << "Cache.cpp : line 83" << endl;
 	unsigned long setNumber = extractSet(address);
-	cout<< "Number of ways : " << nWays << endl;
 	for (int i = 0; i < nWays; i++) {
-//		cout << "Cache.cpp : line 85" << endl;
 		if (Ways[i].find(setNumber)->second.isInit() == false) {
 			return true;
 		}
@@ -113,6 +111,7 @@ void Cache::removeAddress(unsigned long address) {
 					it != LRUs[setNumber].end(); it++) {
 				if (*it == i) {
 					LRUs[setNumber].erase(it);
+					break;
 				}
 			}
 
@@ -125,7 +124,6 @@ void Cache::insertAddress(unsigned long address) {
 	unsigned long setNumber = extractSet(address);
 	unsigned long tagNumber = extractTag(address);
 	int wayNumber = -1;
-	cout << "Cache.cpp : line 128" << endl;
 	for (int i = 0; i < nWays; i++) {
 		if (Ways[i].find(setNumber)->second.isInit() == false) {
 			wayNumber = i;
@@ -136,7 +134,6 @@ void Cache::insertAddress(unsigned long address) {
 		wayNumber = LRUs[setNumber].front();
 		LRUs[setNumber].pop_front();
 	}
-
 	Ways[wayNumber].find(setNumber)->second.setLineAddr(address);
 	Ways[wayNumber].find(setNumber)->second.setLineTag(tagNumber);
 	Ways[wayNumber].find(setNumber)->second.setLineDirtyBit(false);

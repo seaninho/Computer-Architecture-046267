@@ -1,6 +1,7 @@
 #ifndef LINE_HPP_
 #define LINE_HPP_
 
+
 const int UNUSED_LINE = 0;
 
 class Line {

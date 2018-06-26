@@ -40,6 +40,11 @@ public:
 			}
 			Ways.push_back(temp_map);
 		}
+
+		for (int setNum = 0 ; setNum < setSize ; setNum++) {
+			list< int > emptyList;
+			LRUs.push_back(emptyList);;
+		}
 	}
 
 	double getMissRate();

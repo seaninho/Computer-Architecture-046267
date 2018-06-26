@@ -76,7 +76,6 @@ int main(int argc, char **argv) {
 	int totalTime = 0;
 	int totalCommands = 0;
 
-	cout << "cacheSim.cpp : line 79" << endl;
 
 	while (getline(file, line)) {
 
@@ -90,18 +89,18 @@ int main(int argc, char **argv) {
 		}
 
 		// DEBUG - remove this line
-		cout << "operation: " << operation;
+//		cout << "operation: " << operation;
 
 		string cutAddress = address.substr(2); // Removing the "0x" part of the address
 
 		// DEBUG - remove this line
-		cout << ", address (hex)" << cutAddress;
+//		cout << ", address (hex)" << cutAddress;
 
 		unsigned long int num = 0;
 		num = strtoul(cutAddress.c_str(), NULL, 16);
 
 		// DEBUG - remove this line
-		cout << " (dec) " << num << endl;
+//		cout << " (dec) " << num << endl;
 
 		totalCommands++;
 
@@ -132,10 +131,8 @@ int main(int argc, char **argv) {
 			}
 			totalTime = totalTime + L1.getCycles() + L2.getCycles();
 		} else { // miss at L1 & L2
-			cout << "cacheSim.cpp : line 135" << endl;
 			if (isRead || (!isRead && WrAlloc)){
 				if (!L2.setIsAvailable(num)) {
-					cout << "cacheSim.cpp : line 138" << endl;
 					unsigned long int oldNumL2 = L2.lineToRemove(num); // which line should be removeAddressd
 					L1.removeAddress(oldNumL2);	// Snooping. if line exists in L1 cache, removeAddress it. if not, do nothing
 				}
@@ -151,7 +148,6 @@ int main(int argc, char **argv) {
 					L1.setLineDirty(num);
 				}
 			}
-			cout << "cacheSim.cpp : line 155" << endl;
 			totalTime = totalTime + L1.getCycles() + L2.getCycles() + MemCyc;
 		}
 	}
