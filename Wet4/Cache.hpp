@@ -20,16 +20,21 @@ private:
 	unsigned hits;
 	unsigned totalQueries;
 	vector<map<unsigned, Line>> Ways;
-	vector<queue<unsigned>> LRUs;
+	vector<list<int>> LRUs;
 
 	unsigned long extractSet(unsigned long address);
 	unsigned long extractTag(unsigned long address);
-	void updateLRU(unsigned long setNumber ,unsigned long tagNumber);
+	void updateLRU(unsigned long setNumber ,int wayNumber);
 public:
 	Cache(unsigned size, unsigned nWays, unsigned cycles, unsigned blockSize,
 			unsigned setBits, unsigned tagBits,	unsigned hits, unsigned totalQueries) :
 				size(size), nWays(nWays), cycles(cycles), blockSize(blockSize),
-				setBits(setBits), tagBits(tagBits), hits(0), totalQueries(0) {}
+				setBits(setBits), tagBits(tagBits), hits(0), totalQueries(0) {
+		for (int i = 0 ; i < nWays ; i++) {
+			Ways[i];
+		}
+
+	}
 
 	double getMissRate();
 

@@ -87,8 +87,11 @@ bool Cache::setIsAvailable(unsigned long address) {
 	return false;
 }
 
-unsigned long Cache::lineToRemove(unsigned long address,bool isRead) {
 
+unsigned long Cache::lineToRemove(unsigned long address,bool isRead) {
+	unsigned long setNumber = extractSet(address);
+	_List_iterator<int> it = LRUs[setNumber].begin();
+	return (Ways[*it].find(setNumber)->second.getLine());
 }
 
 void Cache::removeAddress(unsigned long address) {
