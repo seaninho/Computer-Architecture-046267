@@ -17,8 +17,6 @@ public:
 	void setLineDirtyBit(bool newDirty);
 	unsigned int getLineTag();
 	void setLineTag(unsigned int newTag);
-	unsigned long int getLine();
-	void setLine(unsigned long int line);
 
 };
 

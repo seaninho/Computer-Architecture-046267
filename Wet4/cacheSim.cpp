@@ -72,12 +72,12 @@ int main(int argc, char **argv) {
 
 	unsigned int L1setBits = L1Size-BSize-L1Assoc;
 	unsigned int L1tagBits = MAX_SIZE - L1setBits - BSize;
-	Cache L1(L1Size, L1Assoc, L1Cyc, L1setBits, L1tagBits);
+	Cache L1(L1Size, L1Assoc, L1Cyc, BSize, L1setBits, L1tagBits);
 
 
 	unsigned int L2setBits = L2Size-BSize-L2Assoc;
 	unsigned int L2tagBits = MAX_SIZE - L2setBits - BSize;
-	Cache L2(L2Size, L2Assoc, L2Cyc, L2setBits, L2tagBits);
+	Cache L2(L2Size, L2Assoc, L2Cyc, BSize, L2setBits, L2tagBits);
 
 	int totalTime = 0;
 	int totalCommands = 0;
@@ -114,12 +114,12 @@ int main(int argc, char **argv) {
 			isRead = true;
 		}
 
-		if (L1.hit(num,isRead)) {
+		if (L1.hit(num)) {
 			if (!isRead) {
 				L1.setLineDirty(num);
 			}
 			totalTime+=L1.getCycles();
-		} else if (L2.hit(num,isRead)) {
+		} else if (L2.hit(num)) {
 			if (isRead || (!isRead && WrAlloc)) {
 				if (!(L1.setIsAvailable(num))) {
 					unsigned long int oldNumL1 = L1.lineToRemove(num,isRead); // which line should be removeAddressd

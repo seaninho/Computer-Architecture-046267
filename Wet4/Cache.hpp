@@ -11,44 +11,43 @@ using namespace std;
 
 class Cache {
 private:
-	unsigned int size; 			// Cache size in bytes
-	unsigned int nWays;			// Associativity
-	unsigned int cycles;		// Number of cycles required to access cache
-	unsigned int blockSize;
-	unsigned int setBits;		// Number of bits to determine the correct set
-	unsigned int tagBits;		// Number of bits to determine the correct tag
-	unsigned int numOfHits;
-	unsigned int totalQueries;
-	vector<map<unsigned int, Line>> Ways;
-	vector<queue<unsigned int>> LRUs;
+	unsigned size; 			// Cache size in bytes
+	unsigned nWays;			// Associativity
+	unsigned cycles;		// Number of cycles required to access cache
+	unsigned blockSize;
+	unsigned setBits;		// Number of bits to determine the correct set
+	unsigned tagBits;		// Number of bits to determine the correct tag
+	unsigned hits;
+	unsigned totalQueries;
+	vector<map<unsigned, Line>> Ways;
+	vector<queue<unsigned>> LRUs;
 
-	unsigned long int extractSet(unsigned long int address);
-	unsigned long int extractTag(unsigned long int address);
-	void updateLRU(unsigned long int setNumber ,unsigned long int tagNumber);
+	unsigned long extractSet(unsigned long address);
+	unsigned long extractTag(unsigned long address);
+	void updateLRU(unsigned long setNumber ,unsigned long tagNumber);
 public:
-	Cache(unsigned int size, unsigned int nWays, unsigned int cycles,
-			unsigned int blockSize, unsigned int setBits, unsigned int tagBits,
-				unsigned int numOfHits = 0, unsigned int totalQueries = 0):
-					size(size), nWays(nWays), cycles(cycles), blockSize(blockSize),
-					setBits(setBits), tagBits(tagBits) {}
+	Cache(unsigned size, unsigned nWays, unsigned cycles, unsigned blockSize,
+			unsigned setBits, unsigned tagBits,	unsigned hits, unsigned totalQueries) :
+				size(size), nWays(nWays), cycles(cycles), blockSize(blockSize),
+				setBits(setBits), tagBits(tagBits), hits(0), totalQueries(0) {}
 
 	double getMissRate();
 
-	unsigned int getCycles();
+	unsigned getCycles();
 
-	void insertAddress(unsigned long int address, bool isRead);
+	void insertAddress(unsigned long address, bool isRead);
 
-	bool hit(unsigned long int address, bool isRead);
+	bool hit(unsigned long address);
 
-	void setLineDirty(unsigned long int address);
+	void setLineDirty(unsigned long address);
 
-	bool setIsAvailable(unsigned long int address);
+	bool setIsAvailable(unsigned long address);
 
-	unsigned long int lineToRemove(unsigned long int address,bool isRead);
+	unsigned long lineToRemove(unsigned long address, bool isRead);
 
-	void removeAddress(unsigned long int address);
+	void removeAddress(unsigned long address);
 
-	bool isDirty(unsigned long int address);
+	bool isDirty(unsigned long address);
 
 
 };
