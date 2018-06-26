@@ -13,11 +13,3 @@ unsigned int Line::getLineTag() {
 void Line::setLineTag(unsigned int newTag) {
 	this->tag = newTag;
 }
-
-unsigned long int Line::getLine() {
-	return this->line;
-}
-
-void Line::setLine(unsigned long int line) {
-	this->line = line;
-}

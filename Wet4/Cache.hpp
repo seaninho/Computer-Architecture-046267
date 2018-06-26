@@ -3,7 +3,7 @@
 
 #include <vector>
 #include <map>
-#include <queue>
+#include <list>
 #include <cmath>
 #include "Line.hpp"
 
@@ -20,11 +20,11 @@ private:
 	unsigned int numOfHits;
 	unsigned int totalQueries;
 	vector<map<unsigned int, Line>> Ways;
-	vector<queue<unsigned int>> LRUs;
+	vector<list<int>> LRUs;
 
 	unsigned long int extractSet(unsigned long int address);
 	unsigned long int extractTag(unsigned long int address);
-	void updateLRU(unsigned long int setNumber ,unsigned long int tagNumber);
+	void updateLRU(unsigned long int setNumber ,int wayNumber);
 public:
 	Cache(unsigned int size, unsigned int nWays, unsigned int cycles,
 			unsigned int blockSize, unsigned int setBits, unsigned int tagBits,
