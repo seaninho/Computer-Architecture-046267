@@ -25,7 +25,6 @@ void Line::setLineTag(unsigned long tag) {
 }
 
 unsigned long Line::getLineAddr() {
-//	std::cout << "Line.cpp : line 28 - getLineAddr " << std::endl;
 	return this->addr;
 }
 
